@@ -23,6 +23,10 @@ function calculateElapsed(startTime: number): number {
 export function useSessionTimer(startTime: number): SessionTimerResult {
   const startTimeRef = useRef(startTime);
 
+  useEffect(() => {
+    startTimeRef.current = startTime;
+  }, [startTime]);
+
   const [elapsedSeconds, setElapsedSeconds] = useState(() =>
     calculateElapsed(startTimeRef.current)
   );
@@ -47,6 +51,10 @@ export function useSessionTimer(startTime: number): SessionTimerResult {
       intervalRef.current = null;
     }
   }, []);
+
+  useEffect(() => {
+    updateElapsed();
+  }, [startTime, updateElapsed]);
 
   useEffect(() => {
     const handleAppStateChange = (nextAppState: AppStateStatus) => {

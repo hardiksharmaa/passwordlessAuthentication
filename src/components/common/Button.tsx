@@ -1,14 +1,14 @@
-
 import React, { useCallback, useRef } from 'react';
 import {
-  TouchableOpacity,
+  Pressable,
   Text,
   StyleSheet,
   ViewStyle,
   ActivityIndicator,
   View,
+  Platform,
 } from 'react-native';
-import { COLORS, SPACING, RADIUS, FONT_SIZE, TIMING, SHADOWS } from '@/constants';
+import { COLORS, SPACING, RADIUS, FONT_SIZE, TIMING } from '@/constants';
 
 type ButtonVariant = 'primary' | 'secondary' | 'text';
 
@@ -40,10 +40,12 @@ export function Button({
   }, [onPress]);
 
   const isDisabled = disabled || loading;
-  const containerStyle = [
+
+  const getContainerStyle = (pressed: boolean) => [
     styles.container,
     styles[`${variant}Container`],
     isDisabled && styles[`${variant}Disabled`],
+    pressed && !isDisabled && styles[`${variant}Pressed`],
     style,
   ];
 
@@ -54,11 +56,10 @@ export function Button({
   ];
 
   return (
-    <TouchableOpacity
+    <Pressable
       onPress={handlePress}
       disabled={isDisabled}
-      activeOpacity={0.7}
-      style={containerStyle}
+      style={({ pressed }) => getContainerStyle(pressed)}
     >
       {loading ? (
         <View style={styles.loadingContainer}>
@@ -70,13 +71,13 @@ export function Button({
       ) : (
         <Text style={textStyle}>{title}</Text>
       )}
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    height: 52,
+    height: 56,
     borderRadius: RADIUS.lg,
     justifyContent: 'center',
     alignItems: 'center',
@@ -95,15 +96,32 @@ const styles = StyleSheet.create({
 
   primaryContainer: {
     backgroundColor: COLORS.primary,
-    ...SHADOWS.sm,
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 2px 8px rgba(37, 99, 235, 0.3)',
+        cursor: 'pointer',
+      },
+      default: {
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 3,
+      },
+    }),
+  },
+  primaryPressed: {
+    backgroundColor: COLORS.primaryDark,
+    transform: [{ scale: 0.98 }],
   },
   primaryText: {
     color: COLORS.textInverse,
   },
   primaryDisabled: {
     backgroundColor: COLORS.disabled,
-    shadowOpacity: 0,
-    elevation: 0,
+    ...(Platform.OS === 'web'
+      ? { boxShadow: 'none' as any }
+      : { shadowOpacity: 0, elevation: 0 }),
   },
   primaryTextDisabled: {
     color: COLORS.textTertiary,
@@ -113,6 +131,16 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     borderWidth: 1.5,
     borderColor: COLORS.primary,
+    ...Platform.select({
+      web: {
+        cursor: 'pointer',
+      },
+      default: {},
+    }),
+  },
+  secondaryPressed: {
+    backgroundColor: COLORS.primaryLight + '15',
+    transform: [{ scale: 0.98 }],
   },
   secondaryText: {
     color: COLORS.primary,
@@ -127,6 +155,15 @@ const styles = StyleSheet.create({
   textContainer: {
     backgroundColor: 'transparent',
     height: 40,
+    ...Platform.select({
+      web: {
+        cursor: 'pointer',
+      },
+      default: {},
+    }),
+  },
+  textPressed: {
+    opacity: 0.7,
   },
   textText: {
     color: COLORS.primary,

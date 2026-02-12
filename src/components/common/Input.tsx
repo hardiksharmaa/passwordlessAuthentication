@@ -1,6 +1,4 @@
-
-
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, forwardRef } from 'react';
 import {
   View,
   TextInput,
@@ -8,6 +6,8 @@ import {
   StyleSheet,
   TextInputProps,
   ViewStyle,
+  Platform,
+  Pressable,
 } from 'react-native';
 import { COLORS, SPACING, RADIUS, FONT_SIZE } from '@/constants';
 
@@ -17,16 +17,22 @@ interface InputProps extends TextInputProps {
   containerStyle?: ViewStyle;
 }
 
-export function Input({
-  label,
-  error,
-  containerStyle,
-  onFocus,
-  onBlur,
-  editable = true,
-  ...rest
-}: InputProps) {
+export const Input = forwardRef<TextInput, InputProps>(function Input(
+  {
+    label,
+    error,
+    containerStyle,
+    onFocus,
+    onBlur,
+    editable = true,
+    ...rest
+  },
+  ref
+) {
   const [isFocused, setIsFocused] = useState(false);
+  const inputRef = React.useRef<TextInput>(null);
+  const resolvedRef = (ref as React.RefObject<TextInput>) || inputRef;
+
   const handleFocus = useCallback(
     (e: any) => {
       setIsFocused(true);
@@ -43,6 +49,10 @@ export function Input({
     [onBlur]
   );
 
+  const handleContainerPress = useCallback(() => {
+    resolvedRef.current?.focus();
+  }, [resolvedRef]);
+
   const getBorderColor = () => {
     if (error) return COLORS.error;
     if (isFocused) return COLORS.borderFocus;
@@ -52,8 +62,9 @@ export function Input({
   return (
     <View style={[styles.container, containerStyle]}>
       {label && <Text style={styles.label}>{label}</Text>}
-      
-      <View
+
+      <Pressable
+        onPress={handleContainerPress}
         style={[
           styles.inputContainer,
           { borderColor: getBorderColor() },
@@ -62,6 +73,7 @@ export function Input({
         ]}
       >
         <TextInput
+          ref={resolvedRef}
           style={[
             styles.input,
             !editable && styles.inputTextDisabled,
@@ -72,14 +84,14 @@ export function Input({
           editable={editable}
           {...rest}
         />
-      </View>
+      </Pressable>
 
       {error && (
         <Text style={styles.error}>{error}</Text>
       )}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {
@@ -92,7 +104,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm,
   },
   inputContainer: {
-    height: 52,
+    height: 56,
     borderWidth: 1.5,
     borderRadius: RADIUS.lg,
     backgroundColor: COLORS.background,
@@ -101,15 +113,23 @@ const styles = StyleSheet.create({
   },
   inputFocused: {
     backgroundColor: COLORS.surface,
+    ...Platform.select({
+      web: {
+        boxShadow: `0 0 0 3px ${COLORS.primary}20`,
+      },
+      default: {},
+    }),
   },
   inputDisabled: {
     backgroundColor: COLORS.surfaceAlt,
   },
   input: {
+    flex: 1,
     fontSize: FONT_SIZE.md,
     fontFamily: 'Inter_400Regular',
     color: COLORS.textPrimary,
     padding: 0,
+    ...(Platform.OS === 'web' ? { outlineStyle: 'none' as any } : {}),
   },
   inputTextDisabled: {
     color: COLORS.textTertiary,

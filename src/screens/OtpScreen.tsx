@@ -4,13 +4,12 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  TouchableWithoutFeedback,
-  Keyboard,
+  ScrollView,
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { OtpScreenProps } from '@/types';
-import { COLORS, SPACING, OTP_CONFIG } from '@/constants';
+import { COLORS, SPACING, RADIUS, OTP_CONFIG } from '@/constants';
 import { OtpManager } from '@/services';
 import { Button, Typography } from '@/components/common';
 import { OtpInput, CountdownTimer } from '@/components/otp';
@@ -44,8 +43,10 @@ export default function OtpScreen({ navigation, route }: OtpScreenProps) {
     [error]
   );
 
-  const handleVerify = useCallback(async () => {
-    if (otp.length !== OTP_CONFIG.LENGTH) {
+  const handleVerify = useCallback(async (otpValue?: string) => {
+    const codeToVerify = otpValue ?? otp;
+    
+    if (codeToVerify.length !== OTP_CONFIG.LENGTH) {
       setError(`Please enter all ${OTP_CONFIG.LENGTH} digits`);
       return;
     }
@@ -56,7 +57,7 @@ export default function OtpScreen({ navigation, route }: OtpScreenProps) {
     try {
       await new Promise((resolve) => setTimeout(resolve, 300));
 
-      const result = OtpManager.validateOtp(email, otp);
+      const result = OtpManager.validateOtp(email, codeToVerify);
 
       if (!isMounted.current) return;
 
@@ -102,7 +103,7 @@ export default function OtpScreen({ navigation, route }: OtpScreenProps) {
       setOtp(value);
       setTimeout(() => {
         if (isMounted.current && value.length === OTP_CONFIG.LENGTH) {
-          handleVerify();
+          handleVerify(value);
         }
       }, 100);
     },
@@ -154,25 +155,36 @@ export default function OtpScreen({ navigation, route }: OtpScreenProps) {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
           <View style={styles.content}>
+            <View style={styles.iconContainer}>
+              <View style={styles.iconCircle}>
+                <Typography variant="display" style={styles.iconText}>✉️</Typography>
+              </View>
+            </View>
+
             <View style={styles.header}>
-              <Typography variant="heading" style={styles.title}>
+              <Typography variant="heading" align="center" style={styles.title}>
                 Enter Verification Code
               </Typography>
               <Typography
                 variant="body"
                 color="secondary"
+                align="center"
                 style={styles.subtitle}
               >
-                We sent a 6-digit code to{'\n'}
-                <Typography variant="body" color="primary" weight="semiBold">
-                  {email}
-                </Typography>
+                We sent a 6-digit code to
+              </Typography>
+              <Typography variant="body" color="primary" weight="semiBold" align="center">
+                {email}
               </Typography>
             </View>
 
-            <View style={styles.otpContainer}>
+            <View style={styles.card}>
               <OtpInput
                 value={otp}
                 onChange={handleOtpChange}
@@ -192,21 +204,22 @@ export default function OtpScreen({ navigation, route }: OtpScreenProps) {
               </View>
 
               {error && (
-                <Typography
-                  variant="caption"
-                  color="error"
-                  align="center"
-                  style={styles.error}
-                >
-                  {error}
-                </Typography>
+                <View style={styles.errorContainer}>
+                  <Typography
+                    variant="caption"
+                    color="error"
+                    align="center"
+                  >
+                    {error}
+                  </Typography>
+                </View>
               )}
             </View>
 
             <View style={styles.actions}>
               <Button
                 title="Verify"
-                onPress={handleVerify}
+                onPress={() => handleVerify()}
                 loading={isLoading}
                 disabled={
                   otp.length !== OTP_CONFIG.LENGTH ||
@@ -224,14 +237,14 @@ export default function OtpScreen({ navigation, route }: OtpScreenProps) {
               />
 
               <Button
-                title="Change Email"
+                title="← Change Email"
                 variant="text"
                 onPress={handleBack}
                 disabled={isLoading}
               />
             </View>
           </View>
-        </TouchableWithoutFeedback>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -240,37 +253,71 @@ export default function OtpScreen({ navigation, route }: OtpScreenProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.surface,
   },
   keyboardView: {
     flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
   },
   content: {
     flex: 1,
     paddingHorizontal: SPACING.xl,
     justifyContent: 'center',
+    paddingVertical: SPACING.xxl,
+  },
+  iconContainer: {
+    alignItems: 'center',
+    marginBottom: SPACING.xl,
+  },
+  iconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: COLORS.primaryLight + '20',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  iconText: {
+    fontSize: 36,
   },
   header: {
-    marginBottom: SPACING.xxxl,
+    marginBottom: SPACING.xxl,
     alignItems: 'center',
   },
   title: {
     marginBottom: SPACING.md,
-    textAlign: 'center',
   },
   subtitle: {
-    textAlign: 'center',
-    lineHeight: 24,
+    marginBottom: SPACING.xs,
   },
-  otpContainer: {
-    marginBottom: SPACING.xxl,
+  card: {
+    backgroundColor: COLORS.background,
+    borderRadius: RADIUS.xl,
+    padding: SPACING.xl,
+    marginBottom: SPACING.xl,
     alignItems: 'center',
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.08)',
+      },
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
+        elevation: 4,
+      },
+    }),
   },
   timerContainer: {
     marginTop: SPACING.lg,
   },
-  error: {
+  errorContainer: {
     marginTop: SPACING.md,
+    paddingHorizontal: SPACING.md,
   },
   actions: {
     alignItems: 'center',

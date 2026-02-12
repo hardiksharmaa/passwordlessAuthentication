@@ -1,27 +1,13 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-let mmkvInstance: any = null;
-
-try {
-  const { MMKV } = require('react-native-mmkv');
-  mmkvInstance = new MMKV({ id: 'passwordless-auth-storage' });
-} catch {
-  console.warn('[Storage] MMKV not available, using in-memory fallback');
-}
-
-const inMemoryStorage = new Map<string, string>();
+const STORAGE_PREFIX = 'passwordless_auth_';
 
 export const StorageService = {
-  get<T>(key: string): T | null {
+  async get<T>(key: string): Promise<T | null> {
     try {
-      let value: string | undefined;
-
-      if (mmkvInstance) {
-        value = mmkvInstance.getString(key);
-      } else {
-        value = inMemoryStorage.get(key);
-      }
-
-      if (value === undefined) {
+      const prefixedKey = STORAGE_PREFIX + key;
+      const value = await AsyncStorage.getItem(prefixedKey);
+      if (value === null) {
         return null;
       }
       return JSON.parse(value) as T;
@@ -30,57 +16,55 @@ export const StorageService = {
     }
   },
 
-  set<T>(key: string, value: T): boolean {
+  async set<T>(key: string, value: T): Promise<boolean> {
     try {
+      const prefixedKey = STORAGE_PREFIX + key;
       const stringValue = JSON.stringify(value);
-
-      if (mmkvInstance) {
-        mmkvInstance.set(key, stringValue);
-      } else {
-        inMemoryStorage.set(key, stringValue);
-      }
+      await AsyncStorage.setItem(prefixedKey, stringValue);
       return true;
     } catch {
       return false;
     }
   },
 
-  remove(key: string): void {
+  async remove(key: string): Promise<void> {
     try {
-      if (mmkvInstance) {
-        mmkvInstance.delete(key);
-      } else {
-        inMemoryStorage.delete(key);
+      const prefixedKey = STORAGE_PREFIX + key;
+      await AsyncStorage.removeItem(prefixedKey);
+    } catch {
+    }
+  },
+
+  async has(key: string): Promise<boolean> {
+    try {
+      const prefixedKey = STORAGE_PREFIX + key;
+      const value = await AsyncStorage.getItem(prefixedKey);
+      return value !== null;
+    } catch {
+      return false;
+    }
+  },
+
+  async clearAll(): Promise<void> {
+    try {
+      const allKeys = await AsyncStorage.getAllKeys();
+      const appKeys = allKeys.filter(k => k.startsWith(STORAGE_PREFIX));
+      if (appKeys.length > 0) {
+        await AsyncStorage.multiRemove(appKeys);
       }
     } catch {
-      // silent fail
     }
   },
 
-  has(key: string): boolean {
-    if (mmkvInstance) {
-      return mmkvInstance.contains(key);
-    }
-    return inMemoryStorage.has(key);
-  },
-
-  clearAll(): void {
+  async getAllKeys(): Promise<string[]> {
     try {
-      if (mmkvInstance) {
-        mmkvInstance.clearAll();
-      } else {
-        inMemoryStorage.clear();
-      }
+      const allKeys = await AsyncStorage.getAllKeys();
+      return allKeys
+        .filter(k => k.startsWith(STORAGE_PREFIX))
+        .map(k => k.replace(STORAGE_PREFIX, ''));
     } catch {
-      // silent fail
+      return [];
     }
-  },
-
-  getAllKeys(): string[] {
-    if (mmkvInstance) {
-      return mmkvInstance.getAllKeys();
-    }
-    return Array.from(inMemoryStorage.keys());
   },
 };
 
