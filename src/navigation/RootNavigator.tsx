@@ -32,7 +32,6 @@ export default function RootNavigator() {
           name="Session" 
           component={SessionScreen}
           options={{
-            // Prevent going back to OTP screen after login
             gestureEnabled: false,
           }}
         />

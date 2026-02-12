@@ -1,7 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
@@ -10,36 +9,29 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LoginScreenProps } from '@/types';
-import { COLORS, SPACING, FONT_SIZE } from '@/constants';
+import { COLORS, SPACING } from '@/constants';
 import { validateEmail, sanitizeEmail } from '@/utils';
 import { OtpManager } from '@/services';
 import { Button, Input, Typography } from '@/components/common';
 
 export default function LoginScreen({ navigation }: LoginScreenProps) {
-  // Form state
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState<string | undefined>();
   const [isLoading, setIsLoading] = useState(false);
 
-  /**
-   * Handle email input change
-   */
-  const handleEmailChange = useCallback((text: string) => {
-    setEmail(text);
-    // Clear error when user starts typing
-    if (emailError) {
-      setEmailError(undefined);
-    }
-  }, [emailError]);
+  const handleEmailChange = useCallback(
+    (text: string) => {
+      setEmail(text);
+      if (emailError) {
+        setEmailError(undefined);
+      }
+    },
+    [emailError]
+  );
 
-  /**
-   * Handle Send OTP button press
-   */
   const handleSendOtp = useCallback(async () => {
-    // Dismiss keyboard
     Keyboard.dismiss();
 
-    // Validate email
     const sanitizedEmail = sanitizeEmail(email);
     const validation = validateEmail(sanitizedEmail);
 
@@ -51,16 +43,10 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
     setIsLoading(true);
 
     try {
-      // Simulate network delay for better UX
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Generate OTP
+      await new Promise((resolve) => setTimeout(resolve, 500));
       OtpManager.generateOtp(sanitizedEmail);
-
-      // Navigate to OTP screen
       navigation.navigate('Otp', { email: sanitizedEmail });
-    } catch (error) {
-      console.error('[LoginScreen] Error generating OTP:', error);
+    } catch {
       setEmailError('Something went wrong. Please try again.');
     } finally {
       setIsLoading(false);
@@ -75,17 +61,19 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <View style={styles.content}>
-            {/* Header */}
             <View style={styles.header}>
               <Typography variant="display" style={styles.title}>
                 Welcome
               </Typography>
-              <Typography variant="body" color="secondary" style={styles.subtitle}>
+              <Typography
+                variant="body"
+                color="secondary"
+                style={styles.subtitle}
+              >
                 Enter your email to receive a one-time password
               </Typography>
             </View>
 
-            {/* Form */}
             <View style={styles.form}>
               <Input
                 label="Email Address"
@@ -111,7 +99,6 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
               />
             </View>
 
-            {/* Footer */}
             <View style={styles.footer}>
               <Typography variant="caption" color="tertiary" align="center">
                 We'll send you a 6-digit code to verify your identity.

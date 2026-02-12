@@ -1,13 +1,3 @@
-/**
- * Passwordless Authentication Flow
- * Main App Entry Point
- * 
- * Features:
- * - Custom Inter font loading
- * - React Navigation setup
- * - Safe area handling
- */
-
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, StyleSheet, ActivityIndicator } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
@@ -24,13 +14,11 @@ import {
 import { RootNavigator } from '@/navigation';
 import { COLORS } from '@/constants';
 
-// Keep splash screen visible while loading fonts
 SplashScreen.preventAutoHideAsync();
 
 export default function App() {
   const [appIsReady, setAppIsReady] = useState(false);
 
-  // Load Inter font family
   const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
@@ -46,12 +34,10 @@ export default function App() {
 
   const onLayoutRootView = useCallback(async () => {
     if (appIsReady) {
-      // Hide splash screen once fonts are ready
       await SplashScreen.hideAsync();
     }
   }, [appIsReady]);
 
-  // Show loading while fonts are loading
   if (!appIsReady) {
     return (
       <View style={styles.loading}>
