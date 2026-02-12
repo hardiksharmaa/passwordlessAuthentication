@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "passwordlessAuthenticationFlow",
+    "name": "Passwordless Auth",
     "slug": "passwordlessAuthenticationFlow",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -13,7 +13,8 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.passwordless.auth"
     },
     "android": {
       "adaptiveIcon": {
@@ -21,7 +22,8 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.passwordless.auth"
     },
     "web": {
       "favicon": "./assets/favicon.png"
