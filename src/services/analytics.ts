@@ -59,22 +59,20 @@ export const AnalyticsService = {
     });
   },
 
-  getEventLog(): AnalyticsEventPayload[] {
-    return (
-      StorageService.get<AnalyticsEventPayload[]>(STORAGE_KEYS.ANALYTICS_LOG) ??
-      []
-    );
+  async getEventLog(): Promise<AnalyticsEventPayload[]> {
+    const log = await StorageService.get<AnalyticsEventPayload[]>(STORAGE_KEYS.ANALYTICS_LOG);
+    return log ?? [];
   },
 
-  clearEventLog(): void {
-    StorageService.remove(STORAGE_KEYS.ANALYTICS_LOG);
+  async clearEventLog(): Promise<void> {
+    await StorageService.remove(STORAGE_KEYS.ANALYTICS_LOG);
   },
 
-  persistEvent(payload: AnalyticsEventPayload): void {
-    const existingLog = this.getEventLog();
+  async persistEvent(payload: AnalyticsEventPayload): Promise<void> {
+    const existingLog = await this.getEventLog();
     existingLog.push(payload);
     const trimmedLog = existingLog.slice(-MAX_LOG_SIZE);
-    StorageService.set(STORAGE_KEYS.ANALYTICS_LOG, trimmedLog);
+    await StorageService.set(STORAGE_KEYS.ANALYTICS_LOG, trimmedLog);
   },
 
   maskEmail(email: string): string {

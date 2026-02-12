@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useRef } from 'react';
-import { View, StyleSheet, Alert, BackHandler } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { View, StyleSheet, Alert, BackHandler, Platform, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SessionScreenProps } from '@/types';
 import { COLORS, SPACING, STORAGE_KEYS } from '@/constants';
@@ -9,8 +9,89 @@ import { useSessionTimer } from '@/hooks';
 
 export default function SessionScreen({ navigation, route }: SessionScreenProps) {
   const { email } = route.params;
-  const sessionStartTime = useRef<number>(getOrCreateSessionStart(email)).current;
+  const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  useEffect(() => {
+    const initSession = async () => {
+      const existingSession = await StorageService.get<{ email: string; startTime: number }>(
+        STORAGE_KEYS.SESSION
+      );
+
+      if (existingSession && existingSession.email === email) {
+        AnalyticsService.logSessionResumed(email);
+        setSessionStartTime(existingSession.startTime);
+      } else {
+        const startTime = Date.now();
+        await StorageService.set(STORAGE_KEYS.SESSION, { email, startTime });
+        AnalyticsService.logSessionStarted(email);
+        setSessionStartTime(startTime);
+      }
+      setIsInitialized(true);
+    };
+
+    initSession();
+  }, [email]);
+
+  if (!isInitialized || sessionStartTime === null) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SessionContent
+      email={email}
+      sessionStartTime={sessionStartTime}
+      navigation={navigation}
+    />
+  );
+}
+
+interface SessionContentProps {
+  email: string;
+  sessionStartTime: number;
+  navigation: SessionScreenProps['navigation'];
+}
+
+function SessionContent({ email, sessionStartTime, navigation }: SessionContentProps) {
   const { formattedDuration, elapsedSeconds } = useSessionTimer(sessionStartTime);
+
+  const performLogout = useCallback(async () => {
+    AnalyticsService.logLogout(email, elapsedSeconds);
+    await StorageService.remove(STORAGE_KEYS.SESSION);
+    OtpManager.clearOtpRecord(email);
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Login' }],
+    });
+  }, [email, elapsedSeconds, navigation]);
+
+  const handleLogout = useCallback(() => {
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm('Are you sure you want to logout?');
+      if (confirmed) {
+        performLogout();
+      }
+    } else {
+      Alert.alert(
+        'Logout',
+        'Are you sure you want to logout?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Logout',
+            style: 'destructive',
+            onPress: performLogout,
+          },
+        ]
+      );
+    }
+  }, [performLogout]);
 
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -18,30 +99,7 @@ export default function SessionScreen({ navigation, route }: SessionScreenProps)
       return true;
     });
     return () => backHandler.remove();
-  }, []);
-
-  const handleLogout = useCallback(() => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: () => {
-            AnalyticsService.logLogout(email, elapsedSeconds);
-            StorageService.remove(STORAGE_KEYS.SESSION);
-            OtpManager.clearOtpRecord(email);
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'Login' }],
-            });
-          },
-        },
-      ]
-    );
-  }, [email, elapsedSeconds, navigation]);
+  }, [handleLogout]);
 
   const formattedStartTime = formatStartTime(sessionStartTime);
 
@@ -90,22 +148,6 @@ export default function SessionScreen({ navigation, route }: SessionScreenProps)
   );
 }
 
-function getOrCreateSessionStart(email: string): number {
-  const existingSession = StorageService.get<{ email: string; startTime: number }>(
-    STORAGE_KEYS.SESSION
-  );
-
-  if (existingSession && existingSession.email === email) {
-    AnalyticsService.logSessionResumed(email);
-    return existingSession.startTime;
-  }
-
-  const startTime = Date.now();
-  StorageService.set(STORAGE_KEYS.SESSION, { email, startTime });
-  AnalyticsService.logSessionStarted(email);
-  return startTime;
-}
-
 function formatStartTime(timestamp: number): string {
   const date = new Date(timestamp);
   return date.toLocaleString('en-US', {
@@ -122,6 +164,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   content: {
     flex: 1,
