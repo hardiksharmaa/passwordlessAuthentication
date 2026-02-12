@@ -9,28 +9,17 @@ import { useSessionTimer } from '@/hooks';
 
 export default function SessionScreen({ navigation, route }: SessionScreenProps) {
   const { email } = route.params;
-  
-  // Get or create session start time
   const sessionStartTime = useRef<number>(getOrCreateSessionStart(email)).current;
-  
-  // Session timer hook
   const { formattedDuration, elapsedSeconds } = useSessionTimer(sessionStartTime);
 
-  /**
-   * Prevent hardware back button from going to previous screens
-   */
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
       handleLogout();
       return true;
     });
-
     return () => backHandler.remove();
   }, []);
 
-  /**
-   * Handle logout
-   */
   const handleLogout = useCallback(() => {
     Alert.alert(
       'Logout',
@@ -41,14 +30,9 @@ export default function SessionScreen({ navigation, route }: SessionScreenProps)
           text: 'Logout',
           style: 'destructive',
           onPress: () => {
-            // Log analytics event
             AnalyticsService.logLogout(email, elapsedSeconds);
-
-            // Clear session data
             StorageService.remove(STORAGE_KEYS.SESSION);
             OtpManager.clearOtpRecord(email);
-
-            // Navigate back to login
             navigation.reset({
               index: 0,
               routes: [{ name: 'Login' }],
@@ -59,15 +43,11 @@ export default function SessionScreen({ navigation, route }: SessionScreenProps)
     );
   }, [email, elapsedSeconds, navigation]);
 
-  /**
-   * Format session start time for display
-   */
   const formattedStartTime = formatStartTime(sessionStartTime);
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        {/* Header */}
         <View style={styles.header}>
           <Typography variant="display" style={styles.greeting}>
             Hello!
@@ -80,7 +60,6 @@ export default function SessionScreen({ navigation, route }: SessionScreenProps)
           </Typography>
         </View>
 
-        {/* Session Info Card */}
         <View style={styles.card}>
           <Typography variant="caption" color="tertiary" style={styles.cardLabel}>
             SESSION STARTED
@@ -99,7 +78,6 @@ export default function SessionScreen({ navigation, route }: SessionScreenProps)
           </Typography>
         </View>
 
-        {/* Logout Button */}
         <View style={styles.footer}>
           <Button
             title="Logout"
@@ -112,30 +90,22 @@ export default function SessionScreen({ navigation, route }: SessionScreenProps)
   );
 }
 
-/**
- * Get existing session start time or create new one
- */
 function getOrCreateSessionStart(email: string): number {
   const existingSession = StorageService.get<{ email: string; startTime: number }>(
     STORAGE_KEYS.SESSION
   );
 
-  // If session exists for this email, use it
   if (existingSession && existingSession.email === email) {
     AnalyticsService.logSessionResumed(email);
     return existingSession.startTime;
   }
 
-  // Create new session
   const startTime = Date.now();
   StorageService.set(STORAGE_KEYS.SESSION, { email, startTime });
   AnalyticsService.logSessionStarted(email);
   return startTime;
 }
 
-/**
- * Format timestamp for display
- */
 function formatStartTime(timestamp: number): string {
   const date = new Date(timestamp);
   return date.toLocaleString('en-US', {

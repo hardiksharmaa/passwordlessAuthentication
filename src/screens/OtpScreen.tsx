@@ -18,17 +18,14 @@ import { OtpInput, CountdownTimer } from '@/components/otp';
 export default function OtpScreen({ navigation, route }: OtpScreenProps) {
   const { email } = route.params;
 
-  // OTP state
   const [otp, setOtp] = useState('');
   const [error, setError] = useState<string | undefined>();
   const [isLoading, setIsLoading] = useState(false);
   const [isExpired, setIsExpired] = useState(false);
-  const [remainingAttempts, setRemainingAttempts] = useState<number>(OTP_CONFIG.MAX_ATTEMPTS);
-  
-  // Timer reset trigger
+  const [remainingAttempts, setRemainingAttempts] = useState<number>(
+    OTP_CONFIG.MAX_ATTEMPTS
+  );
   const [timerKey, setTimerKey] = useState(0);
-
-  // Track if component is mounted to avoid state updates after unmount
   const isMounted = useRef(true);
 
   useEffect(() => {
@@ -37,20 +34,16 @@ export default function OtpScreen({ navigation, route }: OtpScreenProps) {
     };
   }, []);
 
-  /**
-   * Handle OTP input change
-   */
-  const handleOtpChange = useCallback((value: string) => {
-    setOtp(value);
-    // Clear error when user starts typing
-    if (error) {
-      setError(undefined);
-    }
-  }, [error]);
+  const handleOtpChange = useCallback(
+    (value: string) => {
+      setOtp(value);
+      if (error) {
+        setError(undefined);
+      }
+    },
+    [error]
+  );
 
-  /**
-   * Handle OTP validation
-   */
   const handleVerify = useCallback(async () => {
     if (otp.length !== OTP_CONFIG.LENGTH) {
       setError(`Please enter all ${OTP_CONFIG.LENGTH} digits`);
@@ -61,23 +54,23 @@ export default function OtpScreen({ navigation, route }: OtpScreenProps) {
     setError(undefined);
 
     try {
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise((resolve) => setTimeout(resolve, 300));
 
       const result = OtpManager.validateOtp(email, otp);
 
       if (!isMounted.current) return;
 
       if (result.success) {
-        // Navigate to session screen
         navigation.replace('Session', { email });
       } else {
         setRemainingAttempts(result.remainingAttempts);
-        
+
         switch (result.error) {
           case 'INVALID_OTP':
-            setError(`Incorrect code. ${result.remainingAttempts} attempt${result.remainingAttempts !== 1 ? 's' : ''} remaining.`);
-            setOtp(''); // Clear input for retry
+            setError(
+              `Incorrect code. ${result.remainingAttempts} attempt${result.remainingAttempts !== 1 ? 's' : ''} remaining.`
+            );
+            setOtp('');
             break;
           case 'EXPIRED_OTP':
             setError('Code expired. Please request a new one.');
@@ -93,8 +86,7 @@ export default function OtpScreen({ navigation, route }: OtpScreenProps) {
             setError('Verification failed. Please try again.');
         }
       }
-    } catch (err) {
-      console.error('[OtpScreen] Verification error:', err);
+    } catch {
       if (isMounted.current) {
         setError('Something went wrong. Please try again.');
       }
@@ -105,51 +97,42 @@ export default function OtpScreen({ navigation, route }: OtpScreenProps) {
     }
   }, [otp, email, navigation]);
 
-  /**
-   * Handle OTP completion (auto-verify when all digits entered)
-   */
-  const handleOtpComplete = useCallback((value: string) => {
-    setOtp(value);
-    // Auto-verify after a short delay for better UX
-    setTimeout(() => {
-      if (isMounted.current && value.length === OTP_CONFIG.LENGTH) {
-        handleVerify();
-      }
-    }, 100);
-  }, [handleVerify]);
+  const handleOtpComplete = useCallback(
+    (value: string) => {
+      setOtp(value);
+      setTimeout(() => {
+        if (isMounted.current && value.length === OTP_CONFIG.LENGTH) {
+          handleVerify();
+        }
+      }, 100);
+    },
+    [handleVerify]
+  );
 
-  /**
-   * Handle timer expiry
-   */
   const handleExpire = useCallback(() => {
     if (isMounted.current) {
       setIsExpired(true);
     }
   }, []);
 
-  /**
-   * Handle resend OTP
-   */
   const handleResend = useCallback(async () => {
     setIsLoading(true);
     setError(undefined);
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
       OtpManager.generateOtp(email);
 
       if (!isMounted.current) return;
 
-      // Reset all state
       setOtp('');
       setIsExpired(false);
       setRemainingAttempts(OTP_CONFIG.MAX_ATTEMPTS);
-      setTimerKey(prev => prev + 1); // Force timer reset
+      setTimerKey((prev) => prev + 1);
 
       Alert.alert('Code Sent', 'A new verification code has been sent.');
-    } catch (err) {
-      console.error('[OtpScreen] Resend error:', err);
+    } catch {
       if (isMounted.current) {
         setError('Failed to send new code. Please try again.');
       }
@@ -160,9 +143,6 @@ export default function OtpScreen({ navigation, route }: OtpScreenProps) {
     }
   }, [email]);
 
-  /**
-   * Handle back navigation
-   */
   const handleBack = useCallback(() => {
     OtpManager.clearOtpRecord(email);
     navigation.goBack();
@@ -176,12 +156,15 @@ export default function OtpScreen({ navigation, route }: OtpScreenProps) {
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <View style={styles.content}>
-            {/* Header */}
             <View style={styles.header}>
               <Typography variant="heading" style={styles.title}>
                 Enter Verification Code
               </Typography>
-              <Typography variant="body" color="secondary" style={styles.subtitle}>
+              <Typography
+                variant="body"
+                color="secondary"
+                style={styles.subtitle}
+              >
                 We sent a 6-digit code to{'\n'}
                 <Typography variant="body" color="primary" weight="semiBold">
                   {email}
@@ -189,7 +172,6 @@ export default function OtpScreen({ navigation, route }: OtpScreenProps) {
               </Typography>
             </View>
 
-            {/* OTP Input */}
             <View style={styles.otpContainer}>
               <OtpInput
                 value={otp}
@@ -200,7 +182,6 @@ export default function OtpScreen({ navigation, route }: OtpScreenProps) {
                 error={!!error}
               />
 
-              {/* Timer */}
               <View style={styles.timerContainer}>
                 <CountdownTimer
                   key={timerKey}
@@ -210,21 +191,28 @@ export default function OtpScreen({ navigation, route }: OtpScreenProps) {
                 />
               </View>
 
-              {/* Error Message */}
               {error && (
-                <Typography variant="caption" color="error" align="center" style={styles.error}>
+                <Typography
+                  variant="caption"
+                  color="error"
+                  align="center"
+                  style={styles.error}
+                >
                   {error}
                 </Typography>
               )}
             </View>
 
-            {/* Actions */}
             <View style={styles.actions}>
               <Button
                 title="Verify"
                 onPress={handleVerify}
                 loading={isLoading}
-                disabled={otp.length !== OTP_CONFIG.LENGTH || isExpired || remainingAttempts === 0}
+                disabled={
+                  otp.length !== OTP_CONFIG.LENGTH ||
+                  isExpired ||
+                  remainingAttempts === 0
+                }
               />
 
               <Button
