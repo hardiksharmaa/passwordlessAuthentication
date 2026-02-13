@@ -18,7 +18,7 @@ interface SessionData {
 }
 
 export default function RootNavigator() {
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [initialRoute, setInitialRoute] = useState<keyof RootStackParamList>('Login');
   const [sessionEmail, setSessionEmail] = useState<string | null>(null);
 
@@ -53,8 +53,6 @@ export default function RootNavigator() {
         initialRouteName={initialRoute}
         screenOptions={{
           headerShown: false,
-          animation: 'slide_from_right',
-          contentStyle: { backgroundColor: '#FFFFFF' },
         }}
       >
         <Stack.Screen 
@@ -69,9 +67,6 @@ export default function RootNavigator() {
           name="Session" 
           component={SessionScreen}
           initialParams={sessionEmail ? { email: sessionEmail } : undefined}
-          options={{
-            gestureEnabled: false,
-          }}
         />
       </Stack.Navigator>
     </NavigationContainer>
