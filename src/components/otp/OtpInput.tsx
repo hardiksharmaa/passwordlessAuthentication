@@ -107,9 +107,9 @@ export function OtpInput({
               onKeyPress={e => handleKeyPress(e, index)}
               keyboardType="number-pad"
               maxLength={1}
-              selectTextOnFocus
+              selectTextOnFocus={true}
               editable={!disabled}
-              caretHidden
+              caretHidden={true}
             />
           </Pressable>
         );

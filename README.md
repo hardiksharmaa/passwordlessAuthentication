@@ -11,12 +11,59 @@ React Native (Expo) passwordless authentication using Email + OTP with session t
 - Session persistence via AsyncStorage
 - Analytics event logging
 
-## Getting Started
+## Setup Guide
+
+Follow these steps to run the app
+
+### Prerequisites
+
+1. **Node.js** (v18 or higher) - [Download](https://nodejs.org/)
+2. **npm** (comes with Node.js)
+3. **Expo Go app** - Install on your mobile device from [App Store](https://apps.apple.com/app/expo-go/id982107779) or [Google Play](https://play.google.com/store/apps/details?id=host.exp.exponent)
+
+### Installation Steps
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/hardiksharmaa/passwordlessAuthentication.git
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Start the development server**
+   ```bash
+   npx expo start
+   press w to switch to web 
+   press s to switch to expo Go
+   ```
+
+### Running on Mobile Device
+
+1. Ensure your mobile device and computer are on the **same Wi-Fi network**
+2. Open **Expo Go** app on your device
+3. Scan the QR code displayed in the terminal or browser
+
+### Tunnel Mode (Different Networks)
+
+If your device and computer are on different networks:
 
 ```bash
-npm install
-npx expo start
+npx expo start --tunnel
+press s 
 ```
+
+> Note: Tunnel mode requires `@expo/ngrok` which will be installed automatically on first use.
+
+### Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| QR code not scanning | Use tunnel mode or check network connection |
+| Metro bundler stuck | Clear cache with `npx expo start -c` |
+| Dependencies issues | Delete `node_modules` and run `npm install` |
 
 ## Project Structure
 
